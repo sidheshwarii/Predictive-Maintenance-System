@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Maintenance System — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14171A; --panel: #1D2226; --border: #2C3238;
+    --text: #ECEEEF; --text-dim: #8B9298; --accent: #F2B705;
+    --green: #3FB878; --amber: #F2A93B; --red: #E24B4B;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #191C1F 0%, #14171A 100%);
+  }
+  .topbar h1 { font-size: 20px; font-weight: 700; margin: 0; }
+  .topbar .plant-sub { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .conn-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 12px;
+    border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim);
+  }
+  .conn-badge.live { color: var(--green); border-color: rgba(63,184,120,0.4); }
+  .conn-badge.demo { color: var(--amber); border-color: rgba(242,169,59,0.4); }
+  .user-chip { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-dim); }
+  .logout-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px; padding: 7px 12px;
+    border-radius: 2px; cursor: pointer;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .summary-strip {
+    display: flex; gap: 24px; padding: 16px 32px; border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text-dim);
+  }
+  .summary-strip b { color: var(--text); font-weight: 600; }
+
+  .section-title {
+    padding: 20px 32px 4px; font-size: 13px; letter-spacing: 0.3px;
+    color: var(--text-dim); font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .add-machine {
+    margin: 0 32px 24px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 2px; padding: 20px 22px;
+  }
+  .add-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px 16px; margin-bottom: 16px;
+  }
+  .field label {
+    display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--text-dim); margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%; background: #14171A; border: 1px solid var(--border); color: var(--text);
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 7px 9px; border-radius: 2px;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .add-btn {
+    background: var(--accent); border: none; color: #14171A; font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif; font-size: 13px; padding: 9px 18px;
+    border-radius: 2px; cursor: pointer;
+  }
+  .add-btn:hover { opacity: 0.9; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px; background: var(--border); border-top: 1px solid var(--border);
+  }
+  .card { background: var(--panel); padding: 20px 22px; position: relative; border-left: 3px solid transparent; }
+  .card.normal { border-left-color: var(--green); }
+  .card.soon { border-left-color: var(--amber); }
+  .card.high { border-left-color: var(--red); }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .card-head .machine-id { font-size: 16px; font-weight: 700; }
+  .card-head .machine-type { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .status-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 4px 9px; border-radius: 2px; white-space: nowrap; }
+  .status-pill.normal { background: rgba(63,184,120,0.12); color: var(--green); }
+  .status-pill.soon { background: rgba(242,169,59,0.12); color: var(--amber); }
+  .status-pill.high { background: rgba(226,75,75,0.12); color: var(--red); }
+  .readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-bottom: 14px; }
+  .rul-row { margin-bottom: 4px; }
+  .rul-label { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .rul-label .val { color: var(--text); font-weight: 600; }
+  .bar-track { height: 6px; background: #14171A; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: width 0.4s ease; }
+  .bar-fill.normal { background: var(--green); }
+  .bar-fill.soon { background: var(--amber); }
+  .bar-fill.high { background: var(--red); }
+  .rerun-btn {
+    width: 100%; margin-top: 12px; background: transparent; border: 1px solid var(--border);
+    color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+    padding: 8px; border-radius: 2px; cursor: pointer;
+  }
+  .rerun-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .model-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .model-row select {
+    flex: 1; background: #14171A; border: 1px solid var(--border); color: var(--text);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 8px; border-radius: 2px;
+  }
+  .model-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 3px 7px;
+    border-radius: 2px; white-space: nowrap; border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .model-badge.browser { color: var(--green); border-color: rgba(63,184,120,0.4); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Predictive Maintenance System</h1>
+    <div class="plant-sub">Turbofan engine — Remaining Useful Life (RUL) prediction</div>
+  </div>
+  <div class="topbar-right">
+    <span class="user-chip" id="userChip"></span>
+    <span class="conn-badge" id="connBadge">CHECKING...</span>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+</div>
+
+<div class="summary-strip" id="summaryStrip"></div>
+
+<div class="section-title">ADD ENGINE READING</div>
+<div class="add-machine">
+  <div class="add-grid" id="addGrid"></div>
+  <button class="add-btn" id="addBtn">Add &amp; Predict RUL</button>
+</div>
+
+<div class="section-title">ENGINES</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const API_URL = "http://localhost:8000";
+const token = localStorage.getItem("pms_token");
+
+if (!token) {
+  window.location.href = "login.html";
+}
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  try {
+    await fetch(`${API_URL}/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+  } catch (e) {}
+  localStorage.removeItem("pms_token");
+  localStorage.removeItem("pms_username");
+  window.location.href = "login.html";
+});
+
+// Fallback schema (real CMAPSS FD001 values, all 14 features + the
+// REAL trained Linear Regression coefficients) used only if the
+// backend / trained model isn't reachable (GET /schema fails). Random
+// Forest still needs the backend; Linear Regression works either way
+// because its math is simple enough to run directly in this file.
+const DEMO_SCHEMA = {
+  task_type: "regression",
+  rul_clip: 125,
+  numeric_features: ["T24", "T30", "T50", "P30", "Nf", "Nc", "Ps30", "phi", "NRf", "NRc", "BPR", "htBleed", "W31", "W32"],
+  feature_ranges: {
+    T24: { min: 641.21, max: 644.53, default: 642.64 },
+    T30: { min: 1571.04, max: 1616.91, default: 1590.1 },
+    T50: { min: 1382.25, max: 1441.49, default: 1408.04 },
+    P30: { min: 549.85, max: 556.06, default: 553.44 },
+    Nf: { min: 2387.9, max: 2388.56, default: 2388.09 },
+    Nc: { min: 9021.73, max: 9244.59, default: 9060.66 },
+    Ps30: { min: 46.85, max: 48.53, default: 47.51 },
+    phi: { min: 518.69, max: 523.38, default: 521.48 },
+    NRf: { min: 2387.88, max: 2388.56, default: 2388.09 },
+    NRc: { min: 8099.94, max: 8293.72, default: 8140.54 },
+    BPR: { min: 8.3249, max: 8.5848, default: 8.4389 },
+    htBleed: { min: 388.0, max: 400.0, default: 393.0 },
+    W31: { min: 38.14, max: 39.43, default: 38.83 },
+    W32: { min: 22.8942, max: 23.6184, default: 23.2979 },
+  },
+  models: {
+    random_forest: { label: "Random Forest (server-side only)", runs_in_browser: false },
+    linear_regression: {
+      label: "Linear Regression (runs directly in the browser)",
+      runs_in_browser: true,
+      coefficients: [-2.4173550003250317, -1.8696345852412524, -4.193836381830757, 4.051099311652223, -1.094790143799344, -6.014584800251009, -6.0652651462355704, 4.829427872503305, -1.1998069758473426, -4.210124640114708, -3.177096217079162, -1.9708029611983056, 2.6936035328641204, 2.605481119618506],
+      intercept: 86.9588189119084,
+      scaler_mean: [642.6776058209045, 1590.4890972767346, 1408.879098484391, 553.3730523519112, 2388.0962586800315, 9065.39918241652, 47.539670913592175, 521.4170762635106, 2388.0958637763415, 8143.908227160196, 8.442025336634263, 393.20536199504863, 38.817927057544836, 23.29047645069742],
+      scaler_scale: [0.4981092667920182, 6.085225261877313, 8.965345042371922, 0.8777454226412287, 0.07064497424024783, 22.659117194571188, 0.26572538770796555, 0.7349679515339211, 0.07170647986645737, 19.586490804857164, 0.03750697070147779, 1.5462705034856816, 0.17986699725021163, 0.10740198924596424],
+    },
+  },
+};
+
+let schema = null;
+let apiLive = false;
+let engineCount = 0;
+
+// Real Linear Regression inference, done entirely in JS: y = intercept
+// + sum(coef_i * scaled_x_i), where scaled_x_i = (x_i - mean_i) / scale_i
+// (StandardScaler's own formula). This reproduces sklearn's prediction
+// exactly - verified against the actual trained model - so when this
+// model is selected, the result shown is real, not a mock.
+function linearRegressionPredict(reading) {
+  const lr = schema.models.linear_regression;
+  let sum = lr.intercept;
+  schema.numeric_features.forEach((feature, i) => {
+    const scaled = (reading[feature] - lr.scaler_mean[i]) / lr.scaler_scale[i];
+    sum += scaled * lr.coefficients[i];
+  });
+  return Math.max(0, sum);
+}
+
+function statusFromRul(rul) {
+  if (rul > 50) return "normal";
+  if (rul > 20) return "soon";
+  return "high";
+}
+function statusLabel(status) {
+  return { normal: "Normal", soon: "Maintenance Soon", high: "High Risk" }[status];
+}
+
+function mockRandomForestPredict(reading) {
+  // Rough distance-from-typical-healthy-value heuristic, used ONLY as a
+  // last resort when model_type is random_forest and the backend is
+  // unreachable - Random Forest is too complex to run outside Python,
+  // so without the backend this is a stand-in, not the real model.
+  let deviation = 0;
+  for (const key in reading) {
+    const range = schema.feature_ranges[key];
+    if (!range) continue;
+    const span = (range.max - range.min) || 1;
+    deviation += Math.abs(reading[key] - range.default) / span;
+  }
+  const rul = Math.max(0, schema.rul_clip - deviation * 300);
+  return { predicted_rul: Math.round(rul * 10) / 10, status: statusLabel(statusFromRul(rul)), model_used: "random_forest", is_mock: true };
+}
+
+async function checkAuthAndSchema() {
+  try {
+    const meRes = await fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!meRes.ok) throw new Error("unauthenticated");
+    const me = await meRes.json();
+    document.getElementById("userChip").textContent = me.username;
+  } catch (e) {
+    localStorage.removeItem("pms_token");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const badge = document.getElementById("connBadge");
+  try {
+    const res = await fetch(`${API_URL}/schema`);
+    if (!res.ok) throw new Error("no schema yet");
+    schema = await res.json();
+    apiLive = true;
+    badge.textContent = "BOTH MODELS LIVE";
+    badge.className = "conn-badge live";
+  } catch (e) {
+    schema = DEMO_SCHEMA;
+    apiLive = false;
+    badge.textContent = "BACKEND OFFLINE (Linear Regression still real)";
+    badge.className = "conn-badge demo";
+  }
+}
+
+async function getPrediction(reading, modelType) {
+  // Linear Regression always runs for real, directly in this file - no
+  // backend call needed, since its math is simple enough to reproduce
+  // exactly in JS (verified against the actual trained model).
+  if (modelType === "linear_regression") {
+    const rul = linearRegressionPredict(reading);
+    return {
+      predicted_rul: Math.round(rul * 10) / 10,
+      status: statusLabel(statusFromRul(rul)),
+      model_used: "linear_regression",
+      is_mock: false,
+    };
+  }
+
+  // Random Forest needs the real backend - it's too complex to
+  // translate into plain JS arithmetic.
+  if (apiLive) {
+    try {
+      const res = await fetch(`${API_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reading, model_type: "random_forest" }),
+      });
+      if (!res.ok) throw new Error("bad response");
+      const result = await res.json();
+      return { ...result, is_mock: false };
+    } catch (e) {
+      return mockRandomForestPredict(reading);
+    }
+  }
+  return mockRandomForestPredict(reading);
+}
+
+function buildAddForm() {
+  const addGrid = document.getElementById("addGrid");
+  addGrid.innerHTML = "";
+
+  const idField = document.createElement("div");
+  idField.className = "field";
+  idField.innerHTML = `<label>Engine Unit ID</label><input type="text" id="field_engine_id" placeholder="Engine-0${engineCount + 1}">`;
+  addGrid.appendChild(idField);
+
+  const modelField = document.createElement("div");
+  modelField.className = "field";
+  modelField.innerHTML = `<label>Model</label>
+    <select id="field_model_type">
+      <option value="random_forest">Random Forest</option>
+      <option value="linear_regression">Linear Regression</option>
+    </select>`;
+  addGrid.appendChild(modelField);
+
+  schema.numeric_features.forEach(feature => {
+    const range = schema.feature_ranges[feature] || {};
+    const field = document.createElement("div");
+    field.className = "field";
+    field.innerHTML = `<label>${feature} <span style="opacity:0.6;">(${range.min}\u2013${range.max})</span></label>
+      <input type="number" step="0.01" min="${range.min}" max="${range.max}" id="field_${feature}" value="${range.default ?? ""}">`;
+    addGrid.appendChild(field);
+  });
+}
+
+function readingFromForm() {
+  const reading = {};
+  schema.numeric_features.forEach(feature => {
+    reading[feature] = parseFloat(document.getElementById(`field_${feature}`).value);
+  });
+  return reading;
+}
+
+function modelTypeFromForm() {
+  return document.getElementById("field_model_type").value;
+}
+
+function renderSummary() {
+  const strip = document.getElementById("summaryStrip");
+  const counts = { normal: 0, soon: 0, high: 0 };
+  const cards = document.querySelectorAll(".card");
+  cards.forEach(c => {
+    if (c.classList.contains("normal")) counts.normal++;
+    else if (c.classList.contains("soon")) counts.soon++;
+    else if (c.classList.contains("high")) counts.high++;
+  });
+  strip.innerHTML = `
+    <span><b>${cards.length}</b> engines</span>
+    <span style="color:var(--green)"><b>${counts.normal}</b> normal</span>
+    <span style="color:var(--amber)"><b>${counts.soon}</b> maintenance soon</span>
+    <span style="color:var(--red)"><b>${counts.high}</b> high risk</span>
+  `;
+}
+
+function modelBadgeHtml(prediction) {
+  if (prediction.model_used === "linear_regression") {
+    return `<span class="model-badge browser">runs in browser</span>`;
+  }
+  return prediction.is_mock
+    ? `<span class="model-badge">server unavailable — estimate</span>`
+    : `<span class="model-badge">server-side</span>`;
+}
+
+function renderCard(engineId, reading, prediction, modelType) {
+  const status = statusFromRul(prediction.predicted_rul);
+  const card = document.createElement("div");
+  card.className = `card ${status}`;
+
+  const readoutsHtml = schema.numeric_features.map(f => {
+    const range = schema.feature_ranges[f] || {};
+    return `<div class="field">
+      <label>${f}</label>
+      <input type="number" step="0.01" min="${range.min}" max="${range.max}" data-field="${f}" value="${reading[f]}">
+    </div>`;
+  }).join("");
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div><div class="machine-id">${engineId}</div></div>
+      <div class="status-pill ${status}">${statusLabel(status)}</div>
+    </div>
+    <div class="model-row">
+      <select class="model-select">
+        <option value="random_forest" ${modelType === "random_forest" ? "selected" : ""}>Random Forest</option>
+        <option value="linear_regression" ${modelType === "linear_regression" ? "selected" : ""}>Linear Regression</option>
+      </select>
+      <span class="model-badge-slot">${modelBadgeHtml(prediction)}</span>
+    </div>
+    <div class="readouts">${readoutsHtml}</div>
+    <div class="rul-row">
+      <div class="rul-label"><span>PREDICTED RUL</span><span class="val">${prediction.predicted_rul} cycles</span></div>
+      <div class="bar-track"><div class="bar-fill ${status}" style="width:${Math.min(100, (prediction.predicted_rul / (schema.rul_clip || 125)) * 100)}%"></div></div>
+    </div>
+    <button class="rerun-btn">Re-run Prediction</button>
+  `;
+
+  card.querySelector(".rerun-btn").addEventListener("click", async () => {
+    card.querySelectorAll("[data-field]").forEach(el => {
+      reading[el.dataset.field] = parseFloat(el.value);
+    });
+    const chosenModel = card.querySelector(".model-select").value;
+    const newPred = await getPrediction(reading, chosenModel);
+    const newStatus = statusFromRul(newPred.predicted_rul);
+    card.className = `card ${newStatus}`;
+    card.querySelector(".status-pill").className = `status-pill ${newStatus}`;
+    card.querySelector(".status-pill").textContent = statusLabel(newStatus);
+    card.querySelector(".rul-label .val").textContent = `${newPred.predicted_rul} cycles`;
+    card.querySelector(".bar-fill").className = `bar-fill ${newStatus}`;
+    card.querySelector(".bar-fill").style.width = `${Math.min(100, (newPred.predicted_rul / (schema.rul_clip || 125)) * 100)}%`;
+    card.querySelector(".model-badge-slot").innerHTML = modelBadgeHtml(newPred);
+    renderSummary();
+  });
+
+  return card;
+}
+
+async function addEngine(engineId, reading, modelType) {
+  const prediction = await getPrediction(reading, modelType);
+  document.getElementById("grid").appendChild(renderCard(engineId, reading, prediction, modelType));
+  renderSummary();
+}
+
+document.getElementById("addBtn").addEventListener("click", async () => {
+  engineCount++;
+  const idInput = document.getElementById("field_engine_id");
+  const engineId = idInput.value.trim() || `Engine-0${engineCount}`;
+  await addEngine(engineId, readingFromForm(), modelTypeFromForm());
+  idInput.value = "";
+});
+
+async function init() {
+  await checkAuthAndSchema();
+  buildAddForm();
+
+  const seedModels = ["random_forest", "linear_regression"];
+  for (let i = 1; i <= 2; i++) {
+    engineCount++;
+    const reading = {};
+    schema.numeric_features.forEach(f => {
+      const range = schema.feature_ranges[f] || { default: 0 };
+      reading[f] = range.default;
+    });
+    await addEngine(`Engine-0${i}`, reading, seedModels[i - 1]);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

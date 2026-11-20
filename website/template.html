@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="dark" data-theme="amber">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predictive Maintenance System</title>
+<style>
+:root{--bg:#14171A;--panel:#1D2226;--border:#2C3238;--input:#14171A;--text:#ECEEEF;--dim:#8B9298;--accent:#F2B705;--on-accent:#14171A;--green:#3FB878;--amber:#F2A93B;--red:#E24B4B}
+[data-mode=light]{--bg:#F2F4F7;--panel:#FFFFFF;--border:#D5DAE1;--input:#F7F8FA;--text:#1B2128;--dim:#5C6670;--green:#1E8E55;--amber:#B87400;--red:#C73636}
+[data-theme=ocean]{--accent:#3B9EE8}[data-theme=forest]{--accent:#3FB878}[data-theme=violet]{--accent:#9B7BEA}
+[data-mode=light][data-theme=amber]{--accent:#C98F00;--on-accent:#fff}
+[data-mode=light][data-theme=ocean]{--accent:#1F7CC4;--on-accent:#fff}
+[data-mode=light][data-theme=forest]{--accent:#1E8E55;--on-accent:#fff}
+[data-mode=light][data-theme=violet]{--accent:#7451D1;--on-accent:#fff}
+[data-theme=ocean],[data-theme=forest],[data-theme=violet]{--on-accent:#fff}
+[data-mode=dark][data-theme=forest]{--on-accent:#0d1a12}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:background .2s,color .2s}
+.mono,input,select,.tag{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.tools{position:fixed;top:10px;right:12px;display:flex;gap:8px;z-index:50;align-items:center}
+.tools select,.tools button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:12px;cursor:pointer}
+.tools button:hover,.tools select:hover{border-color:var(--accent)}
+.view{display:none}.view.active{display:block}
+.auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px}
+.panel{width:100%;max-width:400px;background:var(--panel);border:1px solid var(--border);border-top:3px solid var(--accent);padding:30px 28px;border-radius:3px}
+.panel h1{font-size:20px;margin:0 0 4px}.sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+label{display:block;font-size:11px;color:var(--dim);margin:14px 0 5px}
+input,select{width:100%;background:var(--input);border:1px solid var(--border);color:var(--text);font-size:14px;padding:9px 11px;border-radius:3px}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.btn{width:100%;margin-top:20px;background:var(--accent);color:var(--on-accent);border:0;font-weight:700;font-size:14px;padding:11px;border-radius:3px;cursor:pointer}
+.btn:hover{opacity:.9}.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);margin-top:10px}.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn.small{width:auto;margin:0;padding:8px 16px;font-size:13px}
+.links{margin-top:16px;font-size:12px;display:flex;justify-content:space-between;gap:8px}
+a{color:var(--dim);cursor:pointer;text-decoration:none}a:hover{color:var(--accent)}
+.msg{font-size:12px;margin-top:12px;display:none;font-family:ui-monospace,monospace}.msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+.rules{list-style:none;margin:8px 0 0;padding:0;font-size:11px;color:var(--dim)}.rules li::before{content:"○ ";}.rules li.ok{color:var(--green)}.rules li.ok::before{content:"● "}
+.cap{display:flex;gap:8px;align-items:center}.cap canvas{border:1px solid var(--border);border-radius:3px;background:var(--input);flex:none}
+.cap button{flex:none;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:3px;padding:8px 10px;cursor:pointer}
+.mailbox{margin-top:14px;padding:12px;border:1px dashed var(--accent);border-radius:3px;font-size:12px;color:var(--dim);display:none;line-height:1.6}
+.mailbox b{color:var(--text);font-size:18px;letter-spacing:3px}
+.note{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.5}
+/* dashboard */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 24px 16px;padding-right:330px;border-bottom:1px solid var(--border)}
+.top h1{font-size:19px;margin:0}.top .sub{margin:2px 0 0}
+.who{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--dim)}
+.out{background:transparent;border:1px solid var(--border);color:var(--dim);padding:6px 11px;border-radius:3px;cursor:pointer}.out:hover{border-color:var(--red);color:var(--red)}
+.tabs{display:flex;gap:0;padding:0 24px;border-bottom:1px solid var(--border)}
+.tab{padding:12px 16px;font-size:13px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent}.tab.on{color:var(--text);border-color:var(--accent)}
+.strip{display:flex;gap:22px;flex-wrap:wrap;padding:14px 24px;border-bottom:1px solid var(--border);font-size:12px;color:var(--dim)}.strip b{color:var(--text)}
+.wrap{padding:16px 24px}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:18px 20px;margin-bottom:18px}
+.box h3{margin:0 0 12px;font-size:13px;color:var(--dim);font-weight:600}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px;margin-bottom:14px}
+.fgrid label{margin:0 0 3px;font-size:10px}.fgrid input,.fgrid select{padding:6px 8px;font-size:12px}
+.imp{display:grid;grid-template-columns:170px 1fr 44px;gap:6px 10px;font-size:11px;align-items:center}
+.imp .t{height:6px;background:var(--input);border:1px solid var(--border);border-radius:3px;overflow:hidden}.imp .t i{display:block;height:100%;background:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:3px;padding:16px 18px}
+.card.normal{border-left-color:var(--green)}.card.soon{border-left-color:var(--amber)}.card.high{border-left-color:var(--red)}
+.card .hd{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.card .hd input{font-weight:700;font-size:15px;background:transparent;border:0;border-bottom:1px dashed var(--border);padding:2px 0;width:55%}
+.pill{font-size:11px;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.pill.normal{background:rgba(63,184,120,.15);color:var(--green)}.pill.soon{background:rgba(242,169,59,.15);color:var(--amber)}.pill.high{background:rgba(226,75,75,.15);color:var(--red)}
+.big{font-size:26px;font-weight:700}.lbl{font-size:11px;color:var(--dim);display:flex;justify-content:space-between}
+.bar{height:7px;background:var(--input);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:6px 0 10px}.bar i{display:block;height:100%}
+.normal .bar i{background:var(--green)}.soon .bar i{background:var(--amber)}.high .bar i{background:var(--red)}
+details{margin-top:6px}summary{font-size:12px;color:var(--dim);cursor:pointer}
+.row{display:flex;gap:8px;margin-top:10px}.row .btn{margin:0;padding:8px;font-size:12px}
+.empty{padding:26px;text-align:center;color:var(--dim);font-size:13px;border:1px dashed var(--border);border-radius:3px}
+.warn{border:1px solid var(--amber);background:rgba(242,169,59,.08);border-radius:3px;padding:14px 16px;font-size:12px;line-height:1.6;color:var(--text);margin-bottom:18px}
+.warn code{background:var(--input);padding:1px 5px;border-radius:3px}
+.social{display:flex;gap:8px;margin-bottom:14px}.social button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--input);border:1px solid var(--border);color:var(--text);padding:9px 6px;border-radius:3px;font-size:12px;cursor:pointer}.social button:hover{border-color:var(--accent)}
+.sep{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:11px;margin:4px 0 0}.sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--border)}
+.demo{display:none;margin-bottom:12px;padding:10px;border:1px dashed var(--accent);border-radius:3px;font-size:12px;color:var(--dim)}.demo input{margin:8px 0}
+.sec{position:fixed;left:12px;bottom:10px;font-size:11px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);background:var(--panel);z-index:40}.sec.ok{color:var(--green)}.sec.warn{color:var(--amber)}.sec.bad{color:var(--red)}
+.drop{border:1.5px dashed var(--border);border-radius:3px;padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--dim)}.drop.over{border-color:var(--accent);background:var(--input)}
+@media(max-width:700px){.top{padding-right:24px;padding-top:56px}.imp{grid-template-columns:110px 1fr 40px}}
+</style>
+</head>
+<body>
+<div class="sec mono" id="secBadge"></div>
+<div class="tools">
+  <select id="lang" aria-label="Language"><option value="en">English</option><option value="hi">हिन्दी</option><option value="es">Español</option><option value="fr">Français</option></select>
+  <select id="theme" aria-label="Theme"><option value="amber" data-i18n="th_amber">Amber</option><option value="ocean" data-i18n="th_ocean">Ocean</option><option value="forest" data-i18n="th_forest">Forest</option><option value="violet" data-i18n="th_violet">Violet</option></select>
+  <button id="modeBtn" type="button" aria-label="Dark / light mode">☾</button>
+</div>
+
+<!-- LOGIN -->
+<div id="v-login" class="view active"><div class="auth"><form class="panel" id="f-login" autocomplete="off">
+  <h1 data-i18n="app">Predictive Maintenance System</h1><div class="sub" data-i18n="login_sub">Log in to continue</div>
+  <div class="social"><button type="button" id="googleBtn"><b style="color:#4285F4;font-size:15px">G</b><span data-i18n="google">Continue with Google</span></button><button type="button" id="msBtn"><svg width="14" height="14" viewBox="0 0 16 16"><rect width="7" height="7" fill="#F25022"/><rect x="9" width="7" height="7" fill="#7FBA00"/><rect y="9" width="7" height="7" fill="#00A4EF"/><rect x="9" y="9" width="7" height="7" fill="#FFB900"/></svg><span data-i18n="microsoft">Continue with Microsoft</span></button></div>
+  <div class="demo" id="demoBox"><div id="demoLbl"></div><input type="email" id="demoEmail" placeholder="name@example.com"><button type="button" class="btn small" id="demoGo">OK</button></div>
+  <div class="sep" data-i18n="or">or</div>
+  <label data-i18n="username">Username</label><input id="l-user" required>
+  <label data-i18n="password">Password</label><input id="l-pass" type="password" required maxlength="16">
+  <label data-i18n="captcha">Captcha: solve the sum</label>
+  <div class="cap"><canvas id="cap-login" width="130" height="42"></canvas><button type="button" data-cap="login" title="Refresh">↻</button><input id="l-cap" inputmode="numeric" placeholder="?" style="width:70px"></div>
+  <div class="msg err" id="l-err"></div>
+  <button class="btn" type="submit" data-i18n="login_btn">Log in</button>
+  <div class="links"><a data-go="forgot" data-i18n="forgot">Forgot password?</a><a data-go="signup" data-i18n="signin_link">New user? Sign in</a></div>
+</form></div></div>
+
+<!-- SIGN IN (registration; renamed from "Create account") -->
+<div id="v-signup" class="view"><div class="auth"><form class="panel" id="f-signup" autocomplete="off">
+  <h1 data-i18n="signin_title">Sign in</h1><div class="sub" data-i18n="signin_sub">Register your details to get access</div>
+  <label data-i18n="username">Username</label><input id="s-user" required maxlength="24">
+  <label data-i18n="email">Email</label><input id="s-mail" type="email" required>
+  <label data-i18n="password">Password</label><input id="s-pass" type="password" required maxlength="16">
+  <ul class="rules" id="rules"><li data-r="len" data-i18n="r_len">8 to 16 characters</li><li data-r="letter" data-i18n="r_letter">At least one letter</li><li data-r="digit" data-i18n="r_digit">At least one number</li><li data-r="spec" data-i18n="r_spec">1 or 2 special characters (!@#$%^&amp;*…)</li></ul>
+  <label data-i18n="confirm">Confirm password</label><input id="s-pass2" type="password" required maxlength="16">
+  <label data-i18n="captcha">Captcha: solve the sum</label>
+  <div class="cap"><canvas id="cap-signup" width="130" height="42"></canvas><button type="button" data-cap="signup" title="Refresh">↻</button><input id="s-cap" inputmode="numeric" placeholder="?" style="width:70px"></div>
+  <div class="msg err" id="s-err"></div>
+  <button class="btn" type="submit" data-i18n="signin_btn">Sign in</button>
+  <div class="links"><a data-go="login" data-i18n="back_login">Back to log in</a></div>
+</form></div></div>
+
+<!-- FORGOT -->
+<div id="v-forgot" class="view"><div class="auth"><form class="panel" id="f-forgot" autocomplete="off">
+  <h1 data-i18n="forgot_title">Forgot password</h1><div class="sub" data-i18n="forgot_sub">We will send a 6-digit OTP to your registered email</div>
+  <label data-i18n="username">Username</label><input id="f-user" required>
+  <div class="msg err" id="f-err"></div>
+  <button class="btn" type="submit" data-i18n="send_otp">Send OTP</button>
+  <div class="mailbox" id="mailbox"></div>
+  <div class="links"><a data-go="login" data-i18n="back_login">Back to log in</a><a data-go="reset" data-i18n="have_otp">I have an OTP</a></div>
+</form></div></div>
+
+<!-- RESET -->
+<div id="v-reset" class="view"><div class="auth"><form class="panel" id="f-reset" autocomplete="off">
+  <h1 data-i18n="reset_title">Reset password</h1><div class="sub" data-i18n="reset_sub">Enter the OTP and a new password</div>
+  <label data-i18n="username">Username</label><input id="r-user" required>
+  <label>OTP</label><input id="r-otp" inputmode="numeric" maxlength="6" required>
+  <label data-i18n="new_password">New password</label><input id="r-pass" type="password" required maxlength="16">
+  <div class="note" data-i18n="r_note">8-16 characters, with a letter, a number and 1 or 2 special characters.</div>
+  <div class="msg err" id="r-err"></div><div class="msg ok" id="r-ok"></div>
+  <button class="btn" type="submit" data-i18n="reset_btn">Reset password</button>
+  <div class="links"><a data-go="login" data-i18n="back_login">Back to log in</a></div>
+</form></div></div>
+
+<!-- DASHBOARD -->
+<div id="v-dash" class="view">
+  <div class="top"><div><h1 data-i18n="app">Predictive Maintenance System</h1><div class="sub" id="dash-sub"></div></div>
+    <div class="who"><span class="mono" id="who"></span><button class="out" id="logout" data-i18n="logout">Log out</button></div></div>
+  <div class="tabs"><div class="tab on" data-ds="industrial" data-i18n="ds_ind">Industrial IoT</div><div class="tab" data-ds="azure" data-i18n="ds_azure">Azure Predictive Maintenance</div></div>
+  <div id="ds-body"></div>
+</div>
+
+<script>
+const MODELS = { industrial: /*__INDUSTRIAL_MODEL__*/null, azure: null };
+const AZURE_DEFAULTS = { // ranges documented for the Azure PdM telemetry; used only to draw the form before a model is imported
+  features:["volt_3h","rotate_3h","pressure_3h","vibration_3h","volt_24h","rotate_24h","pressure_24h","vibration_24h","error1","error2","error3","error4","error5","days_since_comp1","days_since_comp2","days_since_comp3","days_since_comp4","age","model"],
+  machine_types:["model1","model2","model3","model4"], ranges:{volt_3h:[97,255,170],rotate_3h:[138,695,446],pressure_3h:[51,185,100],vibration_3h:[14,76,40],volt_24h:[97,255,170],rotate_24h:[138,695,446],pressure_24h:[51,185,100],vibration_24h:[14,76,40],error1:[0,5,0],error2:[0,5,0],error3:[0,5,0],error4:[0,5,0],error5:[0,5,0],days_since_comp1:[0,365,60],days_since_comp2:[0,365,60],days_since_comp3:[0,365,60],days_since_comp4:[0,365,60],age:[0,20,10],model:[0,3,0]}, importance:{}, metrics:null };
+
+/* ---------- storage helpers ---------- */
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const $=id=>document.getElementById(id);
+
+/* ---------- i18n ---------- */
+const I18N={
+en:{app:"Predictive Maintenance System",login_sub:"Log in to continue",username:"Username",password:"Password",captcha:"Captcha: solve the sum",login_btn:"Log in",forgot:"Forgot password?",signin_link:"New user? Sign in",signin_title:"Sign in",signin_sub:"Register your details to get access",email:"Email",r_len:"8 to 16 characters",r_letter:"At least one letter",r_digit:"At least one number",r_spec:"1 or 2 special characters (!@#$%^&*…)",confirm:"Confirm password",signin_btn:"Sign in",back_login:"Back to log in",forgot_title:"Forgot password",forgot_sub:"We will send a 6-digit OTP to your registered email",send_otp:"Send OTP",have_otp:"I have an OTP",reset_title:"Reset password",reset_sub:"Enter the OTP and a new password",new_password:"New password",r_note:"8-16 characters, with a letter, a number and 1 or 2 special characters.",reset_btn:"Reset password",logout:"Log out",ds_ind:"Industrial IoT",ds_azure:"Azure Predictive Maintenance",th_amber:"Amber",th_ocean:"Ocean",th_forest:"Forest",th_violet:"Violet",
+e_cap:"Wrong captcha answer.",e_cred:"Invalid username or password.",e_user:"Username already taken.",e_match:"Passwords do not match.",e_pw:"Password does not meet the rules.",e_nouser:"No such user.",e_otp:"OTP is wrong or expired.",ok_reset:"Password changed. You can log in now.",mail_head:"Demo mailbox (a real server would email this to",mail_body:"Your OTP is",mail_note:"Valid for 10 minutes. Shown here because a standalone page cannot send real email.",
+sub_ind:"Will the machine fail within 7 days? Random Forest trained on 500,000 rows",sub_azure:"Will the machine fail in the next 24 hours? Microsoft Azure PdM telemetry",
+add_title:"Add a machine",machine_id:"Machine name",machine:"Machine type",add_btn:"Add & predict",rerun:"Re-run prediction",remove:"Remove",edit:"Edit values",fail_prob:"Failure probability",none:"No machines yet. Fill the form above and press Add & predict.",normal:"Normal",soon:"Maintenance Soon",high:"High Risk",
+m_rows:"Training rows",m_auc:"ROC-AUC",m_acc:"Accuracy",m_rec:"Failure recall",m_prec:"Failure precision",m_rate:"Failure rate",m_machines:"Machines",m_high:"High Risk",imp_title:"What the model relies on most (feature importance)",
+az_head:"Azure model not loaded yet",az_body:"The Azure dataset has to be downloaded from Kaggle (5 CSV files) and trained on your computer, because it cannot be bundled here. Run <code>python train_azure.py data/azure</code>, then import the file <code>model/azure_model.json</code> below. Until then the form is a preview and predictions are disabled.",az_import:"Import trained Azure model (JSON)",az_ok:"Azure model loaded",az_bad:"That file is not a valid model JSON."},
+hi:{app:"प्रेडिक्टिव मेंटेनेंस सिस्टम",login_sub:"जारी रखने के लिए लॉग इन करें",username:"उपयोगकर्ता नाम",password:"पासवर्ड",captcha:"कैप्चा: जोड़ हल करें",login_btn:"लॉग इन",forgot:"पासवर्ड भूल गए?",signin_link:"नए उपयोगकर्ता? साइन इन",signin_title:"साइन इन",signin_sub:"पहुँच पाने के लिए अपना विवरण दर्ज करें",email:"ईमेल",r_len:"8 से 16 अक्षर",r_letter:"कम से कम एक अक्षर",r_digit:"कम से कम एक अंक",r_spec:"1 या 2 विशेष चिह्न (!@#$%^&*…)",confirm:"पासवर्ड की पुष्टि करें",signin_btn:"साइन इन",back_login:"लॉग इन पर वापस",forgot_title:"पासवर्ड भूल गए",forgot_sub:"हम आपके पंजीकृत ईमेल पर 6 अंकों का OTP भेजेंगे",send_otp:"OTP भेजें",have_otp:"मेरे पास OTP है",reset_title:"पासवर्ड रीसेट",reset_sub:"OTP और नया पासवर्ड दर्ज करें",new_password:"नया पासवर्ड",r_note:"8-16 अक्षर, एक अक्षर, एक अंक और 1 या 2 विशेष चिह्न।",reset_btn:"पासवर्ड रीसेट करें",logout:"लॉग आउट",ds_ind:"औद्योगिक IoT",ds_azure:"Azure प्रेडिक्टिव मेंटेनेंस",th_amber:"एम्बर",th_ocean:"समुद्र",th_forest:"जंगल",th_violet:"बैंगनी",
+e_cap:"कैप्चा उत्तर गलत है।",e_cred:"उपयोगकर्ता नाम या पासवर्ड गलत है।",e_user:"यह उपयोगकर्ता नाम पहले से है।",e_match:"पासवर्ड मेल नहीं खाते।",e_pw:"पासवर्ड नियमों के अनुसार नहीं है।",e_nouser:"ऐसा उपयोगकर्ता नहीं है।",e_otp:"OTP गलत है या समाप्त हो गया।",ok_reset:"पासवर्ड बदल गया। अब लॉग इन करें।",mail_head:"डेमो मेलबॉक्स (असली सर्वर यह ईमेल भेजता, पता:",mail_body:"आपका OTP है",mail_note:"10 मिनट के लिए मान्य। यहाँ दिखाया गया है क्योंकि स्टैंडअलोन पेज असली ईमेल नहीं भेज सकता।",
+sub_ind:"क्या मशीन 7 दिनों में खराब होगी? 5,00,000 पंक्तियों पर प्रशिक्षित Random Forest",sub_azure:"क्या मशीन अगले 24 घंटों में खराब होगी? Microsoft Azure PdM टेलीमेट्री",
+add_title:"मशीन जोड़ें",machine_id:"मशीन का नाम",machine:"मशीन का प्रकार",add_btn:"जोड़ें और अनुमान लगाएँ",rerun:"फिर से अनुमान लगाएँ",remove:"हटाएँ",edit:"मान बदलें",fail_prob:"खराबी की संभावना",none:"अभी कोई मशीन नहीं। ऊपर का फ़ॉर्म भरें।",normal:"सामान्य",soon:"जल्द मरम्मत",high:"उच्च जोखिम",
+m_rows:"प्रशिक्षण पंक्तियाँ",m_auc:"ROC-AUC",m_acc:"सटीकता",m_rec:"खराबी रिकॉल",m_prec:"खराबी प्रिसीजन",m_rate:"खराबी दर",m_machines:"मशीनें",m_high:"उच्च जोखिम",imp_title:"मॉडल किन विशेषताओं पर सबसे ज़्यादा निर्भर है",
+az_head:"Azure मॉडल अभी लोड नहीं है",az_body:"Azure डेटासेट Kaggle से डाउनलोड कर (5 CSV फ़ाइलें) आपके कंप्यूटर पर प्रशिक्षित करना होगा। <code>python train_azure.py data/azure</code> चलाएँ, फिर <code>model/azure_model.json</code> नीचे इम्पोर्ट करें। तब तक फ़ॉर्म केवल पूर्वावलोकन है।",az_import:"प्रशिक्षित Azure मॉडल (JSON) इम्पोर्ट करें",az_ok:"Azure मॉडल लोड हुआ",az_bad:"यह फ़ाइल मान्य मॉडल JSON नहीं है।"},
+es:{app:"Sistema de Mantenimiento Predictivo",login_sub:"Inicia sesión para continuar",username:"Usuario",password:"Contraseña",captcha:"Captcha: resuelve la suma",login_btn:"Iniciar sesión",forgot:"¿Olvidaste tu contraseña?",signin_link:"¿Usuario nuevo? Regístrate",signin_title:"Registrarse",signin_sub:"Introduce tus datos para obtener acceso",email:"Correo electrónico",r_len:"De 8 a 16 caracteres",r_letter:"Al menos una letra",r_digit:"Al menos un número",r_spec:"1 o 2 caracteres especiales (!@#$%^&*…)",confirm:"Confirmar contraseña",signin_btn:"Registrarse",back_login:"Volver a iniciar sesión",forgot_title:"Contraseña olvidada",forgot_sub:"Enviaremos un OTP de 6 dígitos a tu correo registrado",send_otp:"Enviar OTP",have_otp:"Tengo un OTP",reset_title:"Restablecer contraseña",reset_sub:"Introduce el OTP y una nueva contraseña",new_password:"Nueva contraseña",r_note:"8-16 caracteres, con una letra, un número y 1 o 2 caracteres especiales.",reset_btn:"Restablecer contraseña",logout:"Cerrar sesión",ds_ind:"IoT Industrial",ds_azure:"Mantenimiento Predictivo Azure",th_amber:"Ámbar",th_ocean:"Océano",th_forest:"Bosque",th_violet:"Violeta",
+e_cap:"Respuesta del captcha incorrecta.",e_cred:"Usuario o contraseña incorrectos.",e_user:"El usuario ya existe.",e_match:"Las contraseñas no coinciden.",e_pw:"La contraseña no cumple las reglas.",e_nouser:"No existe ese usuario.",e_otp:"OTP incorrecto o caducado.",ok_reset:"Contraseña cambiada. Ya puedes iniciar sesión.",mail_head:"Buzón de demostración (un servidor real lo enviaría a",mail_body:"Tu OTP es",mail_note:"Válido 10 minutos. Se muestra aquí porque una página independiente no puede enviar correo real.",
+sub_ind:"¿Fallará la máquina en 7 días? Random Forest entrenado con 500.000 filas",sub_azure:"¿Fallará la máquina en las próximas 24 horas? Telemetría Microsoft Azure PdM",
+add_title:"Añadir una máquina",machine_id:"Nombre de la máquina",machine:"Tipo de máquina",add_btn:"Añadir y predecir",rerun:"Volver a predecir",remove:"Quitar",edit:"Editar valores",fail_prob:"Probabilidad de fallo",none:"Aún no hay máquinas. Rellena el formulario de arriba.",normal:"Normal",soon:"Mantenimiento pronto",high:"Riesgo alto",
+m_rows:"Filas de entrenamiento",m_auc:"ROC-AUC",m_acc:"Exactitud",m_rec:"Recall de fallos",m_prec:"Precisión de fallos",m_rate:"Tasa de fallos",m_machines:"Máquinas",m_high:"Riesgo alto",imp_title:"En qué se basa más el modelo (importancia de variables)",
+az_head:"Modelo Azure aún no cargado",az_body:"El conjunto de datos de Azure se descarga de Kaggle (5 CSV) y se entrena en tu ordenador. Ejecuta <code>python train_azure.py data/azure</code> e importa <code>model/azure_model.json</code> abajo. Hasta entonces el formulario es solo una vista previa.",az_import:"Importar modelo Azure entrenado (JSON)",az_ok:"Modelo Azure cargado",az_bad:"Ese archivo no es un JSON de modelo válido."},
+fr:{app:"Système de Maintenance Prédictive",login_sub:"Connectez-vous pour continuer",username:"Nom d'utilisateur",password:"Mot de passe",captcha:"Captcha : résolvez la somme",login_btn:"Se connecter",forgot:"Mot de passe oublié ?",signin_link:"Nouvel utilisateur ? Inscription",signin_title:"Inscription",signin_sub:"Saisissez vos informations pour obtenir l'accès",email:"E-mail",r_len:"8 à 16 caractères",r_letter:"Au moins une lettre",r_digit:"Au moins un chiffre",r_spec:"1 ou 2 caractères spéciaux (!@#$%^&*…)",confirm:"Confirmer le mot de passe",signin_btn:"S'inscrire",back_login:"Retour à la connexion",forgot_title:"Mot de passe oublié",forgot_sub:"Nous enverrons un OTP à 6 chiffres à votre e-mail enregistré",send_otp:"Envoyer l'OTP",have_otp:"J'ai un OTP",reset_title:"Réinitialiser le mot de passe",reset_sub:"Saisissez l'OTP et un nouveau mot de passe",new_password:"Nouveau mot de passe",r_note:"8-16 caractères, avec une lettre, un chiffre et 1 ou 2 caractères spéciaux.",reset_btn:"Réinitialiser",logout:"Déconnexion",ds_ind:"IoT Industriel",ds_azure:"Maintenance Prédictive Azure",th_amber:"Ambre",th_ocean:"Océan",th_forest:"Forêt",th_violet:"Violet",
+e_cap:"Mauvaise réponse au captcha.",e_cred:"Identifiant ou mot de passe invalide.",e_user:"Nom d'utilisateur déjà pris.",e_match:"Les mots de passe ne correspondent pas.",e_pw:"Le mot de passe ne respecte pas les règles.",e_nouser:"Utilisateur inconnu.",e_otp:"OTP incorrect ou expiré.",ok_reset:"Mot de passe modifié. Vous pouvez vous connecter.",mail_head:"Boîte mail de démonstration (un vrai serveur l'enverrait à",mail_body:"Votre OTP est",mail_note:"Valable 10 minutes. Affiché ici car une page autonome ne peut pas envoyer de vrai e-mail.",
+sub_ind:"La machine tombera-t-elle en panne sous 7 jours ? Random Forest entraîné sur 500 000 lignes",sub_azure:"La machine tombera-t-elle en panne dans les 24 h ? Télémétrie Microsoft Azure PdM",
+add_title:"Ajouter une machine",machine_id:"Nom de la machine",machine:"Type de machine",add_btn:"Ajouter et prédire",rerun:"Relancer la prédiction",remove:"Supprimer",edit:"Modifier les valeurs",fail_prob:"Probabilité de panne",none:"Aucune machine. Remplissez le formulaire ci-dessus.",normal:"Normal",soon:"Maintenance bientôt",high:"Risque élevé",
+m_rows:"Lignes d'entraînement",m_auc:"ROC-AUC",m_acc:"Exactitude",m_rec:"Rappel des pannes",m_prec:"Précision des pannes",m_rate:"Taux de pannes",m_machines:"Machines",m_high:"Risque élevé",imp_title:"Ce sur quoi le modèle s'appuie le plus (importance des variables)",
+az_head:"Modèle Azure pas encore chargé",az_body:"Le jeu de données Azure se télécharge sur Kaggle (5 CSV) et s'entraîne sur votre ordinateur. Lancez <code>python train_azure.py data/azure</code> puis importez <code>model/azure_model.json</code> ci-dessous. Jusque-là, le formulaire n'est qu'un aperçu.",az_import:"Importer le modèle Azure entraîné (JSON)",az_ok:"Modèle Azure chargé",az_bad:"Ce fichier n'est pas un JSON de modèle valide."}};
+
+const EXTRA={
+en:{google:"Continue with Google",microsoft:"Continue with Microsoft",or:"or",demo_prompt:"Demo mode (no {p} client ID set). Enter the {p} email to sign in as:",e_social:"Social sign-in failed.",sec_ok:"Secure connection (HTTPS)",sec_file:"Local file, not served over HTTPS",sec_local:"Localhost, HTTPS not enabled",sec_bad:"Not secure",sec_tip:"The padlock certificate is issued to your web server by a Certificate Authority. Host this page on HTTPS to get it.",up_h:"Upload dataset (CSV or JSON)",drop:"Drag & drop a file here, or",browse:"Browse file",tpl:"Download template",up_ok:"Imported {n} machines and predicted each.",up_bad:"Unsupported or unreadable file (use .csv or .json, max 5 MB)."},
+hi:{google:"Google से जारी रखें",microsoft:"Microsoft से जारी रखें",or:"या",demo_prompt:"डेमो मोड ({p} क्लाइंट ID सेट नहीं है)। जिस {p} ईमेल से साइन इन करना है वह दर्ज करें:",e_social:"सोशल साइन-इन विफल रहा।",sec_ok:"सुरक्षित कनेक्शन (HTTPS)",sec_file:"लोकल फ़ाइल, HTTPS पर नहीं",sec_local:"Localhost, HTTPS बंद",sec_bad:"सुरक्षित नहीं",sec_tip:"पैडलॉक प्रमाणपत्र आपके वेब सर्वर को सर्टिफिकेट अथॉरिटी देती है। पेज को HTTPS पर होस्ट करें।",up_h:"डेटासेट अपलोड करें (CSV या JSON)",drop:"फ़ाइल यहाँ खींचें, या",browse:"फ़ाइल चुनें",tpl:"टेम्पलेट डाउनलोड करें",up_ok:"{n} मशीनें इम्पोर्ट हुईं और अनुमान लगाया गया।",up_bad:"फ़ाइल असमर्थित या अपठनीय है (.csv या .json, अधिकतम 5 MB)।"},
+es:{google:"Continuar con Google",microsoft:"Continuar con Microsoft",or:"o",demo_prompt:"Modo demo (sin ID de cliente de {p}). Introduce el correo de {p} para entrar:",e_social:"Falló el inicio de sesión social.",sec_ok:"Conexión segura (HTTPS)",sec_file:"Archivo local, sin HTTPS",sec_local:"Localhost, HTTPS no activado",sec_bad:"No seguro",sec_tip:"El certificado del candado lo emite una Autoridad de Certificación a tu servidor. Aloja esta página en HTTPS.",up_h:"Subir conjunto de datos (CSV o JSON)",drop:"Arrastra un archivo aquí o",browse:"Elegir archivo",tpl:"Descargar plantilla",up_ok:"Se importaron {n} máquinas y se predijo cada una.",up_bad:"Archivo no compatible o ilegible (.csv o .json, máx. 5 MB)."},
+fr:{google:"Continuer avec Google",microsoft:"Continuer avec Microsoft",or:"ou",demo_prompt:"Mode démo (pas d'ID client {p}). Saisissez l'e-mail {p} pour vous connecter :",e_social:"Échec de la connexion sociale.",sec_ok:"Connexion sécurisée (HTTPS)",sec_file:"Fichier local, pas en HTTPS",sec_local:"Localhost, HTTPS désactivé",sec_bad:"Non sécurisé",sec_tip:"Le certificat du cadenas est délivré à votre serveur par une autorité de certification. Hébergez cette page en HTTPS.",up_h:"Importer un jeu de données (CSV ou JSON)",drop:"Glissez un fichier ici, ou",browse:"Choisir un fichier",tpl:"Télécharger le modèle",up_ok:"{n} machines importées et prédites.",up_bad:"Fichier non pris en charge ou illisible (.csv ou .json, 5 Mo max)."}};
+for(const k in EXTRA)Object.assign(I18N[k],EXTRA[k]);
+let lang=ls.get("pms_lang","en"); if(!I18N[lang])lang="en";
+const T=k=>(I18N[lang]&&I18N[lang][k])||I18N.en[k]||k;
+function applyLang(){try{secBadge()}catch(e){}document.documentElement.lang=lang;document.querySelectorAll("[data-i18n]").forEach(e=>{const k=e.dataset.i18n;e.innerHTML=T(k)});
+  $("lang").value=lang; if($("v-dash").classList.contains("active"))renderDash(); }
+
+/* ---------- theme ---------- */
+function applyTheme(){const m=ls.get("pms_mode","dark"),t=ls.get("pms_theme","amber");document.documentElement.dataset.mode=m;document.documentElement.dataset.theme=t;$("modeBtn").textContent=m==="dark"?"☾":"☀";$("theme").value=t}
+$("modeBtn").onclick=()=>{ls.set("pms_mode",ls.get("pms_mode","dark")==="dark"?"light":"dark");applyTheme()};
+$("theme").onchange=e=>{ls.set("pms_theme",e.target.value);applyTheme()};
+$("lang").onchange=e=>{lang=e.target.value;ls.set("pms_lang",lang);applyLang()};
+
+/* ---------- navigation ---------- */
+function show(n){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="v-"+n));
+  if(n==="login")newCap("login");if(n==="signup")newCap("signup");window.scrollTo(0,0)}
+document.querySelectorAll("[data-go]").forEach(a=>a.onclick=()=>show(a.dataset.go));
+
+/* ---------- captcha (math, drawn on canvas with noise) ---------- */
+const capAns={};
+function newCap(k){const a=2+Math.floor(Math.random()*9),b=2+Math.floor(Math.random()*9),mul=Math.random()<.35;
+  capAns[k]=String(mul?a*b:a+b);const c=$("cap-"+k),x=c.getContext("2d"),css=getComputedStyle(document.documentElement);
+  x.clearRect(0,0,c.width,c.height);x.fillStyle=css.getPropertyValue("--input");x.fillRect(0,0,c.width,c.height);
+  for(let i=0;i<7;i++){x.strokeStyle=`hsla(${Math.random()*360},50%,55%,.55)`;x.lineWidth=1.3;x.beginPath();x.moveTo(Math.random()*130,Math.random()*42);x.lineTo(Math.random()*130,Math.random()*42);x.stroke()}
+  x.fillStyle=css.getPropertyValue("--text");x.font="bold 22px monospace";x.textBaseline="middle";
+  [...`${a}${mul?"×":"+"}${b}=?`].forEach((ch,i)=>{x.save();x.translate(12+i*20,22+(Math.random()*8-4));x.rotate(Math.random()*.5-.25);x.fillText(ch,0,0);x.restore()});
+  const i=$(k==="login"?"l-cap":"s-cap");if(i)i.value=""}
+document.querySelectorAll("[data-cap]").forEach(b=>b.onclick=()=>newCap(b.dataset.cap));
+$("modeBtn").addEventListener("click",()=>{newCap("login");newCap("signup")});$("theme").addEventListener("change",()=>{newCap("login");newCap("signup")});
+
+/* ---------- password policy ---------- */
+function pwChecks(p){const sp=(p.match(/[^A-Za-z0-9\s]/g)||[]).length;
+  return{len:p.length>=8&&p.length<=16,letter:/[A-Za-z]/.test(p),digit:/\d/.test(p),spec:sp>=1&&sp<=2&&!/\s/.test(p)}}
+const pwOk=p=>Object.values(pwChecks(p)).every(Boolean);
+$("s-pass").oninput=e=>{const c=pwChecks(e.target.value);document.querySelectorAll("#rules li").forEach(li=>li.classList.toggle("ok",c[li.dataset.r]))};
+
+/* ---------- mock auth (stored in this browser only) ---------- */
+async function hash(s){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("pms:"+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){let h=5381;for(const c of "pms:"+s)h=((h<<5)+h+c.charCodeAt(0))>>>0;return"x"+h}}
+const users=()=>ls.get("pms_users",{}),saveUsers=u=>ls.set("pms_users",u);
+function err(id,key){const e=$(id);e.className="msg err";e.textContent=T(key);e.style.display="block"}
+$("f-login").onsubmit=async ev=>{ev.preventDefault();$("l-err").style.display="none";
+  if($("l-cap").value.trim()!==capAns.login){err("l-err","e_cap");newCap("login");return}
+  const u=users()[$("l-user").value.trim().toLowerCase()];
+  if(!u||u.hash!==await hash($("l-pass").value)){err("l-err","e_cred");newCap("login");return}
+  ls.set("pms_session",u.name);enter(u.name)};
+$("f-signup").onsubmit=async ev=>{ev.preventDefault();$("s-err").style.display="none";
+  const name=$("s-user").value.trim(),p=$("s-pass").value;
+  if($("s-cap").value.trim()!==capAns.signup){err("s-err","e_cap");newCap("signup");return}
+  if(!pwOk(p)){err("s-err","e_pw");return}
+  if(p!==$("s-pass2").value){err("s-err","e_match");return}
+  const all=users();if(all[name.toLowerCase()]){err("s-err","e_user");return}
+  all[name.toLowerCase()]={name,email:$("s-mail").value.trim(),hash:await hash(p)};saveUsers(all);
+  ls.set("pms_session",name);enter(name)};
+$("f-forgot").onsubmit=ev=>{ev.preventDefault();$("f-err").style.display="none";$("mailbox").style.display="none";
+  const key=$("f-user").value.trim().toLowerCase(),u=users()[key];if(!u){err("f-err","e_nouser");return}
+  const otp=String(Math.floor(100000+Math.random()*900000));const t=ls.get("pms_otps",{});t[key]={otp,exp:Date.now()+600000};ls.set("pms_otps",t);
+  const m=$("mailbox");m.innerHTML=`${T("mail_head")} <b class="mono" style="font-size:12px;letter-spacing:0">${u.email.replace(/</g,"")}</b>):<br>${T("mail_body")} <b class="mono">${otp}</b><br><span style="font-size:11px">${T("mail_note")}</span>`;m.style.display="block";$("r-user").value=$("f-user").value};
+$("f-reset").onsubmit=async ev=>{ev.preventDefault();$("r-err").style.display="none";$("r-ok").style.display="none";
+  const key=$("r-user").value.trim().toLowerCase(),t=ls.get("pms_otps",{}),o=t[key],all=users();
+  if(!all[key]){err("r-err","e_nouser");return}
+  if(!o||o.otp!==$("r-otp").value.trim()||Date.now()>o.exp){err("r-err","e_otp");return}
+  if(!pwOk($("r-pass").value)){err("r-err","e_pw");return}
+  all[key].hash=await hash($("r-pass").value);saveUsers(all);delete t[key];ls.set("pms_otps",t);
+  const k=$("r-ok");k.textContent=T("ok_reset");k.style.display="block"};
+$("logout").onclick=()=>{ls.del("pms_session");show("login")};
+
+/* ---------- model inference (Random Forest runs here, in JS) ---------- */
+function forestProb(model,x){let s=0;for(const t of model.trees){let i=0;while(t.l[i]!==-1){i=x[t.f[i]]<=t.t[i]?t.l[i]:t.r[i]}s+=t.p[i]}return s/model.trees.length}
+const tier=p=>p<.3?"normal":p<.7?"soon":"high";
+const CAT=m=>m.features.includes("Machine_Type")?"Machine_Type":m.features.includes("model")?"model":null;
+const isBinary=(m,f)=>m.ranges[f][0]===0&&m.ranges[f][1]===1&&f!==CAT(m);
+
+/* ---------- dashboard ---------- */
+let ds="industrial";
+const fleets=ls.get("pms_fleets",{industrial:[],azure:[]});const saveFleets=()=>ls.set("pms_fleets",fleets);
+function model(){return MODELS[ds]||(ds==="azure"?AZURE_DEFAULTS:null)}
+const real=()=>!!MODELS[ds];
+function fieldHtml(m,f,val,pre){const id=pre+f;
+  if(f===CAT(m))return`<div><label>${f}</label><select data-f="${f}">${m.machine_types.map((t,i)=>`<option value="${i}" ${i==val?"selected":""}>${t}</option>`).join("")}</select></div>`;
+  if(isBinary(m,f))return`<div><label>${f}</label><select data-f="${f}"><option value="0" ${val==0?"selected":""}>0 (No)</option><option value="1" ${val==1?"selected":""}>1 (Yes)</option></select></div>`;
+  const[lo,hi]=m.ranges[f];return`<div><label>${f} <span style="opacity:.6">(${+lo.toFixed(1)}…${+hi.toFixed(1)})</span></label><input data-f="${f}" type="number" step="any" value="${val}"></div>`}
+const defaults=m=>Object.fromEntries(m.features.map(f=>[f,f===CAT(m)?0:+m.ranges[f][2].toFixed(2)]));
+const readFields=root=>{const r={};root.querySelectorAll("[data-f]").forEach(e=>r[e.dataset.f]=parseFloat(e.value));return r};
+function predict(r){const m=MODELS[ds];if(!m)return null;return forestProb(m,m.features.map(f=>r[f]))}
+
+function renderDash(){const m=model();$("dash-sub").textContent=T(ds==="industrial"?"sub_ind":"sub_azure");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.ds===ds));
+  const fleet=fleets[ds]||[],mm=MODELS[ds]&&MODELS[ds].metrics;
+  let h="";
+  if(mm){const hi=fleet.filter(x=>x.p!=null&&tier(x.p)==="high").length;
+    h+=`<div class="strip mono"><span>${T("m_rows")}: <b>${mm.rows.toLocaleString()}</b></span><span>${T("m_rate")}: <b>${(mm.fail_rate*100).toFixed(1)}%</b></span><span>${T("m_auc")}: <b>${mm.roc_auc}</b></span><span>${T("m_acc")}: <b>${(mm.accuracy*100).toFixed(0)}%</b></span><span>${T("m_rec")}: <b>${mm.fail_recall}</b></span><span>${T("m_prec")}: <b>${mm.fail_precision}</b></span><span>${T("m_machines")}: <b>${fleet.length}</b></span><span>${T("m_high")}: <b style="color:var(--red)">${hi}</b></span></div>`}
+  h+=`<div class="wrap">`;
+  if(!real())h+=`<div class="warn"><b>${T("az_head")}</b><br>${T("az_body")}<br><br><label style="display:inline-block;margin:0"><span class="btn small" style="display:inline-block">${T("az_import")}</span><input id="imp-file" type="file" accept=".json" style="display:none"></label><span id="imp-msg" class="mono" style="margin-left:10px"></span></div>`;
+  h+=`<div class="box"><h3>${T("add_title")}</h3><div class="fgrid"><div><label>${T("machine_id")}</label><input id="new-name" value="${ds==="industrial"?"MC":"AZ"}-${String(fleet.length+1).padStart(3,"0")}"></div>`;
+  const d=defaults(m);h+=m.features.map(f=>fieldHtml(m,f,d[f],"new-")).join("")+`</div><button class="btn small" id="add" ${real()?"":"disabled style='opacity:.5;cursor:not-allowed'"}>${T("add_btn")}</button></div>`;
+  h+=`<div class="box"><h3>${T("up_h")}</h3><div class="drop" id="drop" ${real()?"":"style='opacity:.5;pointer-events:none'"}><span>${T("drop")}</span><label class="btn small" style="cursor:pointer;display:inline-block">${T("browse")}<input type="file" id="file-in" accept=".csv,.json" hidden></label><button type="button" class="btn ghost small" id="tpl">${T("tpl")}</button></div><div class="note mono" id="up-msg"></div></div>`;
+  if(real()&&Object.keys(m.importance).length)h+=`<div class="box"><h3>${T("imp_title")}</h3><div class="imp mono">${Object.entries(m.importance).slice(0,8).map(([k,v])=>`<span>${k}</span><div class="t"><i style="width:${Math.min(100,v/Object.values(m.importance)[0]*100)}%"></i></div><span>${(v*100).toFixed(1)}%</span>`).join("")}</div></div>`;
+  h+=fleet.length?`<div class="cards">${fleet.map((x,i)=>cardHtml(m,x,i)).join("")}</div>`:`<div class="empty">${T("none")}</div>`;
+  $("ds-body").innerHTML=h+`</div>`;
+  const add=$("add");if(add&&real())add.onclick=()=>{const r=readFields($("ds-body").querySelector(".box"));fleet.push({name:$("new-name").value||"Machine",r,p:predict(r)});fleets[ds]=fleet;saveFleets();renderDash()};
+  const f=$("imp-file");if(f)f.onchange=e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{try{const j=JSON.parse(rd.result);if(!j.trees||!j.features||!j.ranges)throw 0;MODELS.azure=j;renderDash();const k=$("imp-msg");if(k)k.textContent=""}catch(x){$("imp-msg").textContent=T("az_bad");$("imp-msg").style.color="var(--red)"}};rd.readAsText(file)};
+  bindUpload();
+  $("ds-body").querySelectorAll(".card").forEach(c=>{const i=+c.dataset.i;
+    c.querySelector(".rerun").onclick=()=>{const x=fleet[i];x.name=c.querySelector(".nm").value;x.r=readFields(c);x.p=predict(x.r);saveFleets();renderDash()};
+    c.querySelector(".rm").onclick=()=>{fleet.splice(i,1);saveFleets();renderDash()}})}
+function cardHtml(m,x,i){const p=x.p,t=p==null?"normal":tier(p);
+  return`<div class="card ${t}" data-i="${i}"><div class="hd"><input class="nm" value="${x.name.replace(/"/g,"&quot;")}"><span class="pill ${t}">${T(t)}</span></div>
+  <div class="lbl"><span>${T("fail_prob")}</span></div><div class="big mono">${p==null?"—":(p*100).toFixed(1)+"%"}</div><div class="bar"><i style="width:${p==null?0:Math.max(2,p*100)}%"></i></div>
+  <details><summary>${T("edit")}</summary><div class="fgrid" style="margin-top:10px">${m.features.map(f=>fieldHtml(m,f,x.r[f],"c"+i+"-")).join("")}</div></details>
+  <div class="row"><button class="btn ghost rerun">${T("rerun")}</button><button class="btn ghost rm" style="width:auto">${T("remove")}</button></div></div>`}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{ds=t.dataset.ds;renderDash()});
+
+
+/* ---------- Google / Microsoft sign-in ---------- */
+/* Paste your own client IDs to use real OAuth. It only works when this page is served from http(s)
+   (e.g. localhost or GitHub Pages) and that address is registered in the Google/Azure console.
+   From a double-clicked file, or with empty IDs, the buttons run in clearly-labelled demo mode. */
+const CONFIG={GOOGLE_CLIENT_ID:"",MS_CLIENT_ID:"",MS_TENANT:"common"};
+const served=location.protocol==="http:"||location.protocol==="https:";
+function socialDone(email){email=email.toLowerCase();const all=users();if(!all[email])all[email]={name:email,email,hash:null};saveUsers(all);ls.set("pms_session",email);enter(email)}
+const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+let demoProv="";
+function demoSocial(p){demoProv=p;$("demoLbl").textContent=T("demo_prompt").replace(/\{p\}/g,p);$("demoBox").style.display="block";$("demoEmail").focus()}
+$("demoGo").onclick=()=>{const em=$("demoEmail").value.trim();if(/^\S+@\S+\.\S+$/.test(em)){$("demoBox").style.display="none";socialDone(em)}};
+$("googleBtn").onclick=async()=>{if(!CONFIG.GOOGLE_CLIENT_ID||!served)return demoSocial("Google");
+  try{if(!window.google)await loadScript("https://accounts.google.com/gsi/client");
+    google.accounts.oauth2.initTokenClient({client_id:CONFIG.GOOGLE_CLIENT_ID,scope:"openid email profile",callback:async r=>{if(r.error)return err("l-err","e_social");
+      const p=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}})).json();p.email?socialDone(p.email):err("l-err","e_social")}}).requestAccessToken()}catch(x){err("l-err","e_social")}};
+$("msBtn").onclick=async()=>{if(!CONFIG.MS_CLIENT_ID||!served)return demoSocial("Microsoft");
+  try{if(!window.msal)await loadScript("https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js");
+    const app=new msal.PublicClientApplication({auth:{clientId:CONFIG.MS_CLIENT_ID,authority:"https://login.microsoftonline.com/"+CONFIG.MS_TENANT,redirectUri:location.origin+location.pathname}});
+    await app.initialize();const r=await app.loginPopup({scopes:["User.Read"]});socialDone(r.account.username)}catch(x){err("l-err","e_social")}};
+
+/* ---------- security badge ---------- */
+function secBadge(){const b=$("secBadge"),https=location.protocol==="https:",file=location.protocol==="file:",local=["localhost","127.0.0.1"].includes(location.hostname);
+  b.className="sec mono "+(https?"ok":(file||local)?"warn":"bad");b.textContent=(https?"🔒 ":"⚠ ")+T(https?"sec_ok":file?"sec_file":local?"sec_local":"sec_bad");b.title=T("sec_tip")}
+
+/* ---------- upload dataset (CSV / JSON) ---------- */
+function parseCSV(text){const rows=[];let r=[],f="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===","){r.push(f);f=""}
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;r.push(f);f="";if(r.some(x=>x!==""))rows.push(r);r=[]}else f+=c}
+  r.push(f);if(r.some(x=>x!==""))rows.push(r);if(rows.length<2)return[];
+  const head=rows[0].map(h=>h.trim());return rows.slice(1).map(row=>Object.fromEntries(head.map((h,i)=>[h,(row[i]||"").trim()])))}
+const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+function importRows(objs){const m=MODELS[ds];if(!m||!objs.length)return false;objs=objs.slice(0,300);
+  const keys=Object.keys(objs[0]),col={};m.features.forEach(f=>{const k=keys.find(k=>norm(k)===norm(f));if(k)col[f]=k});
+  if(!Object.keys(col).length)return false;
+  const idKey=keys.find(k=>["machineid","id","machine","machinename"].includes(norm(k))),d=defaults(m),cat=CAT(m);
+  objs.forEach((o,n)=>{const r={};m.features.forEach(f=>{let v=o[col[f]];
+    if(f===cat){const i=m.machine_types.findIndex(t=>norm(t)===norm(v));v=i>=0?i:(isNaN(parseFloat(v))?d[f]:parseFloat(v))}
+    else if(/^(true|yes)$/i.test(v))v=1;else if(/^(false|no)$/i.test(v))v=0;else{v=parseFloat(v);if(isNaN(v))v=d[f]}
+    r[f]=v});fleets[ds].push({name:(idKey&&o[idKey])||`U-${fleets[ds].length+1}`,r,p:predict(r)})});
+  saveFleets();renderDash();const k=$("up-msg");if(k)k.textContent=T("up_ok").replace("{n}",objs.length);return true}
+function handleFile(file){const bad=()=>{const k=$("up-msg");if(k)k.textContent=T("up_bad")};
+  if(!file||!/\.(csv|json)$/i.test(file.name)||file.size>5*1024*1024)return bad();
+  const rd=new FileReader();rd.onload=()=>{try{let o;if(/\.json$/i.test(file.name)){const j=JSON.parse(rd.result);o=Array.isArray(j)?j:(Array.isArray(j.data)?j.data:[])}else o=parseCSV(rd.result);if(!importRows(o))bad()}catch(e){bad()}};rd.readAsText(file)}
+function downloadTemplate(){const m=MODELS[ds]||model(),d=defaults(m),cols=["Machine_ID",...m.features],cat=CAT(m);
+  const row=["M-100",...m.features.map(f=>f===cat?m.machine_types[0]:d[f])];
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([cols.join(",")+"\n"+row.join(",")+"\n"],{type:"text/csv"}));a.download=`pms-${ds}-template.csv`;a.click();URL.revokeObjectURL(a.href)}
+function bindUpload(){const dz=$("drop"),fi=$("file-in");if(!dz)return;fi.onchange=e=>{handleFile(e.target.files[0]);e.target.value=""};
+  ["dragover","dragenter"].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.add("over")}));["dragleave","drop"].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.remove("over")}));
+  dz.addEventListener("drop",e=>handleFile(e.dataTransfer.files[0]));$("tpl").onclick=downloadTemplate}
+
+function enter(name){$("who").textContent=name;show("dash");renderDash()}
+secBadge();applyTheme();applyLang();newCap("login");newCap("signup");
+const sess=ls.get("pms_session",null);if(sess&&users()[sess.toLowerCase()])enter(sess);
+</script>
+</body></html>

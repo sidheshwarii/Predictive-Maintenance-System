@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Maintenance System — Create Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14171A; --panel: #1D2226; --border: #2C3238;
+    --text: #ECEEEF; --text-dim: #8B9298; --accent: #F2B705;
+    --green: #3FB878; --red: #E24B4B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .panel {
+    width: 100%; max-width: 380px; background: var(--panel);
+    border: 1px solid var(--border); border-top: 3px solid var(--accent);
+    padding: 36px 32px; border-radius: 2px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--text-dim); font-size: 13px; margin-bottom: 28px; }
+  label {
+    display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--text-dim); margin-bottom: 6px; margin-top: 16px;
+  }
+  input {
+    width: 100%; background: #14171A; border: 1px solid var(--border);
+    color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+    padding: 10px 12px; border-radius: 2px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  .submit-btn {
+    width: 100%; margin-top: 24px; background: var(--accent); border: none;
+    color: #14171A; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 14px; padding: 11px; border-radius: 2px; cursor: pointer;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .links { margin-top: 16px; font-size: 12px; text-align: center; }
+  a { color: var(--text-dim); text-decoration: none; }
+  a:hover { color: var(--accent); }
+  .error { color: var(--red); font-size: 12px; margin-top: 12px; display: none; font-family: 'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Create Account</h1>
+  <div class="sub">Set up access to the Predictive Maintenance System dashboard</div>
+
+  <form id="signupForm">
+    <label>Username</label>
+    <input type="text" id="username" required autocomplete="username">
+
+    <label>Email</label>
+    <input type="email" id="email" required autocomplete="email">
+
+    <label>Password</label>
+    <input type="password" id="password" required minlength="6" autocomplete="new-password">
+
+    <button type="submit" class="submit-btn">Create Account</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+
+  <div class="links"><a href="login.html">Already have an account? Sign in</a></div>
+</div>
+
+<script>
+const API_URL = "http://localhost:8000";
+
+document.getElementById("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const username = document.getElementById("username").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const errorEl = document.getElementById("errorMsg");
+  errorEl.style.display = "none";
+
+  try {
+    const res = await fetch(`${API_URL}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Signup failed.");
+
+    localStorage.setItem("pms_token", data.token);
+    localStorage.setItem("pms_username", data.username);
+    window.location.href = "dashboard.html";
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = "block";
+  }
+});
+</script>
+</body>
+</html>
